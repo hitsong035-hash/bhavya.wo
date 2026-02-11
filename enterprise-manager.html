@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Management Dashboard</title>
+  
+  <!-- ✅ jQuery (Required for Select2) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- ✅ Select2 CSS & JS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <!-- ✅ jsPDF for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { 
+      margin: 0; 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: #f2f2f2; 
+      color: #333;
+      line-height: 1.5;
+    }
+    
+    header { 
+      background: #007b8f; 
+      color: white; 
+      padding: 15px 30px; 
+      font-size: 20px; 
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    nav {
+      background-color: #2c3e50;
+      display: flex;
+      padding-left: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+    }
+    
+    .dropdown { position: relative; display: inline-block; }
+    .dropbtn {
+      background-color: #2c3e50;
+      color: white;
+      padding: 16px 20px;
+      font-size: 15px;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.3s;
+      display: block;
+    }
+    .dropbtn:hover { background-color: #34495e; }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #ffffff;
+      min-width: 200px;
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+      z-index: 10000;
+      border-radius: 0 0 4px 4px;
+    }
+    .dropdown-content a {
+      color: #333;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .dropdown-content a:last-child { border-bottom: none; }
+    .dropdown-content a:hover { background-color: #f1f1f1; color: #007b8f; }
+    .dropdown:hover .dropdown-content { display: block; }
+    
+    .section {
+      display: none;
+      background: white;
+      padding: 30px;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      margin: 20px 30px;
+    }
+    .active { display: block; }
+    
+    h2 { 
+      margin-top: 0; 
+      color: #2c3e50; 
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #555; }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .select2-container--default .select2-selection--single {
+      height: 38px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px;
+    }
+    .select2-container { width: 100% !important; }
+
+    .line-item-box {
+      background: #fcfcfc;
+      border: 1px solid #eee;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: #e74c3c;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+      background: none;
+      z-index: 10;
+    }
+
+    button.btn-teal {
+      background-color: teal;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.btn-teal:hover { background-color: #006666; }
+    button.btn-outline { background: transparent; border: 1px solid teal; color: teal; padding: 8px 16px; margin-bottom: 15px; cursor: pointer; border-radius: 4px; }
+
+    .btn-action {
+      padding: 4px 8px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 4px;
+    }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+    th, td { border: 1px solid #eee; padding: 8px 6px; text-align: left; vertical-align: top; }
+    th { background-color: #f8f9fa; color: #2c3e50; position: sticky; top: 0; }
+
+    /* Permission Table specific styling */
+    .permission-table { margin-top: 10px; width: 100%; border: 1px solid #ddd; }
+    .permission-table th, .permission-table td { text-align: center; border: 1px solid #ddd; }
+    .permission-table td:first-child { text-align: left; font-weight: bold; width: 150px; }
+
+    .stats-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid teal; }
+    .stat-card h3 { margin: 0; font-size: 13px; color: #777; text-transform: uppercase; }
+    .stat-card p { margin: 10px 0 0; font-size: 22px; font-weight: bold; color: #2c3e50; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 4px;
+      display: none;
+      z-index: 10001;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span>Enterprise Manager (Prabandhak)</span>
+    <span id="current-clock" style="font-size: 14px; font-weight: normal;"></span>
+  </header>
+
+  <nav>
+    <div class="dropdown"><button class="dropbtn" onclick="showSection('dashboard')">Dashboard</button></div>
+    <div class="dropdown">
+      <button class="dropbtn">Master ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openProductForm()">Add Product</a>
+        <a href="javascript:void(0)" onclick="showSection('productReport')">Product List</a>
+        <a href="javascript:void(0)" onclick="openPartyForm()">Add Party</a>
+        <a href="javascript:void(0)" onclick="showSection('partyReport')">Party List</a>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Users ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openUserForm()">Add User</a>
+        <a href="javascript:void(0)" onclick="showSection('manageUser')">User Directory</a>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Roll ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openRollForm()">Add Roll</a>
+        <a href="javascript:void(0)" onclick="showSection('rollReport')">Roll Report</a>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Production ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openMachineProductionForm()">Add Production</a>
+        <a href="javascript:void(0)" onclick="showSection('machineReport')">Production Report</a>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Purchase ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openPurchaseForm()">Add Purchase</a>
+        <a href="javascript:void(0)" onclick="showSection('purchaseReport')">Purchase Report</a>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Sale ▾</button>
+      <div class="dropdown-content">
+        <a href="javascript:void(0)" onclick="openSaleForm()">Add Sale</a>
+        <a href="javascript:void(0)" onclick="showSection('saleReport')">Sale Report</a>
+      </div>
+    </div>
+    <div class="dropdown"><button class="dropbtn" onclick="showSection('stockManagement')">Stock Status</button></div>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="dashboard">
+    <h2>Operations Summary (Sankshipt Vivaran)</h2>
+    <div class="stats-container">
+      <div class="stat-card" style="border-left-color: #3498db;"><h3>Parties</h3><p id="stat-parties">0</p></div>
+      <div class="stat-card" style="border-left-color: #f39c12;"><h3>Purchases</h3><p id="stat-purchases">₹0.00</p></div>
+      <div class="stat-card" style="border-left-color: #27ae60;"><h3>Sales</h3><p id="stat-sales">₹0.00</p></div>
+      <div class="stat-card" style="border-left-color: #9b59b6;"><h3>Users</h3><p id="stat-users">0</p></div>
+    </div>
+  </div>
+
+  <!-- PRODUCT MASTER -->
+  <div class="section" id="addProduct">
+    <h2 id="prod-form-title">Product Master</h2>
+    <form id="productForm" onsubmit="handleProductSubmit(event)">
+      <input type="hidden" id="edit-prod-idx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Name</label><input id="m_prod_name" required></div>
+        <div class="form-group"><label>Category</label><select id="m_prod_cat"></select></div>
+        <div class="form-group"><label>Unit</label><select id="m_prod_unit"></select></div>
+        <div class="form-group"><label>Purchase Price</label><input type="number" id="m_prod_pur_price" step="0.01"></div>
+        <div class="form-group"><label>Sales Price</label><input type="number" id="m_prod_sale_price" step="0.01"></div>
+        <div class="form-group"><label>Opening Stock</label><input type="number" id="m_prod_stock"></div>
+        <div class="form-group"><label>Extra Price</label><input type="number" id="m_prod_extra"></div>
+        <div class="form-group"><label>1 Grus Ratio</label><input type="number" id="m_prod_grus_ratio" value="1"></div>
+      </div>
+      <button type="submit" class="btn-teal">Save Product</button>
+    </form>
+  </div>
+
+  <div class="section" id="productReport">
+    <h2>Product List</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Unit</th>
+          <th>P.Price</th>
+          <th>S.Price</th>
+          <th>Stock</th>
+          <th>Ratio</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="prodBody"></tbody>
+    </table>
+  </div>
+
+  <!-- PARTY MASTER -->
+  <div class="section" id="addParty">
+    <h2 id="party-form-title">Add New Party</h2>
+    <form id="partyForm" onsubmit="handlePartySubmit(event)">
+      <input type="hidden" id="edit-party-idx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Party Name</label><input type="text" id="p_name" required></div>
+        <div class="form-group">
+          <label>Party Type</label>
+          <div class="radio-group" style="display: flex; gap: 15px; align-items: center; padding: 10px 0;">
+            <label><input type="radio" name="p_type" value="Customer" checked> Customer</label>
+            <label><input type="radio" name="p_type" value="Vendor"> Vendor</label>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn-teal">Save Party</button>
+    </form>
+  </div>
+
+  <div class="section" id="partyReport">
+    <h2>Party List</h2>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Actions</th></tr></thead><tbody id="partyBody"></tbody></table>
+  </div>
+
+  <!-- USER MASTER -->
+  <div class="section" id="addUser">
+    <h2 id="user-form-title">Add New User</h2>
+    <form id="userForm" onsubmit="handleUserSubmit(event)">
+      <input type="hidden" id="edit-user-idx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name</label><input type="text" id="u_name" required></div>
+        <div class="form-group"><label>User ID</label><input type="text" id="u_loginid" required></div>
+        <div class="form-group"><label>Password</label><input type="password" id="u_password" required></div>
+        <div class="form-group"><label>Mobile Number</label><input type="tel" id="u_mobile" required></div>
+      </div>
+
+      <h3 style="margin-top:20px; font-size: 16px;">Module Permissions (Adhikar)</h3>
+      <table class="permission-table">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>View</th>
+            <th>Edit</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody id="permissionsTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+      <br>
+      <button type="submit" class="btn-teal">Save User & Access</button>
+    </form>
+  </div>
+
+  <div class="section" id="manageUser">
+    <h2>User Directory</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>User ID</th>
+          <th>Mobile</th>
+          <th>Access Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- ROLL MASTER -->
+  <div class="section" id="addRoll">
+    <h2 style="background: #2c3e50; color: white; padding: 15px; border-radius: 4px 4px 0 0;">Add Roll</h2>
+    <form id="rollForm" onsubmit="addRoll(event)" style="padding: 20px;">
+      <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div class="form-group">
+          <label>Roll Name</label>
+          <input type="text" id="rollName" required />
+        </div>
+        <div class="form-group">
+          <label>Stock</label>
+          <input type="number" id="rollStock" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label>For Production</label>
+          <input type="checkbox" id="rollProduction" style="transform: scale(1.5); margin-top: 10px;" />
+        </div>
+      </div>
+
+      <h3 style="margin-top: 30px;">Raw Materials (Child SKUs)</h3>
+      <div id="childSKUContainer" style="margin-bottom: 20px;"></div>
+
+      <button type="button" onclick="addChildSKU()" class="btn-teal" style="background: #3498db;">
+        + Add Another Child SKU
+      </button>
+
+      <br><br>
+      <button type="submit" class="btn-teal">Save Roll</button>
+    </form>
+  </div>
+
+  <!-- PURCHASE MASTER -->
+  <div class="section" id="addPurchase">
+    <h2 id="pur-form-title">New Purchase</h2>
+    <input type="hidden" id="edit-pur-idx" value="-1">
+    <div class="form-grid">
+      <div class="form-group"><label>Vendor</label><select id="p_party_select" class="searchable"></select></div>
+      <div class="form-group"><label>Date</label><input type="date" id="p_date"></div>
+    </div>
+    <div id="purchase-items-container"></div>
+    <button class="btn-outline" onclick="addPurchaseRow()">+ Add Item</button>
+    <div class="form-group" style="align-items: flex-end;"><label>Grand Total</label><input type="text" id="p_total" readonly value="0.00" style="width: 150px; text-align: right; font-weight: bold;"></div>
+    <button class="btn-teal" onclick="saveDoc('purchase')">Save Transaction</button>
+  </div>
+
+  <div class="section" id="purchaseReport">
+    <h2>Purchase History</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>PDF</th>
+            <th>Invc No</th>
+            <th>Vendor</th>
+            <th>Items</th>
+            <th>Var.</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>Total</th>
+            <th>Extra</th>
+            <th>Line Totals</th>
+            <th>Actions</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="rptPurBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SALE MASTER -->
+  <div class="section" id="addSale">
+    <h2 id="sale-form-title">New Sale</h2>
+    <input type="hidden" id="edit-sale-idx" value="-1">
+    <div class="form-grid">
+      <div class="form-group"><label>Customer</label><select id="s_party_select" class="searchable"></select></div>
+      <div class="form-group"><label>Date</label><input type="date" id="s_date"></div>
+    </div>
+    <div id="sale-items-container"></div>
+    <button class="btn-outline" onclick="addSaleRow()">+ Add Item</button>
+    <div class="form-group" style="align-items: flex-end;"><label>Grand Total</label><input type="text" id="s_total" readonly value="0.00" style="width: 150px; text-align: right; font-weight: bold;"></div>
+    <button class="btn-teal" onclick="saveDoc('sale')">Save Transaction</button>
+  </div>
+
+  <div class="section" id="saleReport">
+    <h2>Sale History</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>PDF</th>
+            <th>Invc No</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>Grand Total</th>
+            <th>Pcs (TH*Gr*Ra)</th>
+            <th>Ratio</th>
+            <th>Bag/Grus</th>
+            <th>Line Amts</th>
+            <th>Actions</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="rptSaleBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MACHINE PRODUCTION ENTRY -->
+  <div class="section" id="machineProduction">
+    <h2 id="machine-form-title">Machine Production Entry</h2>
+    <form id="machineProductionForm" onsubmit="saveMachineProduction(event)">
+      <input type="hidden" id="edit-machine-idx" value="-1">
+      <div class="form-grid">
+        <div class="form-group"><label>Date</label><input type="date" id="machineDate" required></div>
+        <div class="form-group">
+          <label>Machine No</label>
+          <select id="machineNo" onchange="checkAddMachine(this)" required>
+            <option value="">--Select--</option>
+            <option value="M-01">M-01</option>
+            <option value="M-02">M-02</option>
+            <option value="__add">+ Add New Machine</option>
+          </select>
+        </div>
+      </div>
+      <div id="machineItemsContainer"></div>
+      <button type="button" class="btn-outline" onclick="addMachineItem()">+ Add Produced Item</button>
+      <br><br>
+      <button type="submit" class="btn-teal">Save Production Log</button>
+    </form>
+  </div>
+
+  <!-- MACHINE PRODUCTION REPORT -->
+  <div class="section" id="machineReport">
+    <h2>Machine Production Report</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Date</th>
+          <th>Machine</th>
+          <th>Produced Items</th>
+          <th>Total Qty</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="machineReportBody"></tbody>
+    </table>
+  </div>
+
+  <!-- STOCK STATUS -->
+  <div class="section" id="stockManagement">
+    <h2>Stock Status</h2>
+    <div class="form-grid"><div class="form-group"><label>Filter Date</label><input type="date" id="stockDate" onchange="renderAll()"></div></div>
+    <table><thead><tr><th>Product</th><th>Opening</th><th>In</th><th>Out</th><th>Consumed</th><th>Balance</th></tr></thead><tbody id="stockBody"></tbody></table>
+  </div>
+
+  <div class="section" id="rollReport"><h2>Roll Report</h2><table><thead><tr><th>Roll Name</th><th>Weight</th><th>Type</th><th>Actions</th></tr></thead><tbody id="rollTableBody"></tbody></table></div>
+
+  <script>
+    const state = {
+      products: [],
+      parties: [],
+      users: JSON.parse(localStorage.getItem('biz_users')) || [],
+      units: ["pcs", "kg", "grus", "box"],
+      categories: ["General", "Raw Materials", "Finished Goods", "Rolls"],
+      purchases: [],
+      sales: [],
+      rolls: [],
+      machineProductionData: [],
+      permissionModules: ["Master", "Users", "Roll", "Production", "Purchase", "Sale", "Stock", "Dashboard"]
+    };
+
+    // --- USER PERMISSION LOGIC ---
+    function renderPermissionTable(existingPerms = null) {
+      const tbody = document.getElementById("permissionsTableBody");
+      tbody.innerHTML = state.permissionModules.map(mod => {
+        const p = existingPerms && existingPerms[mod] ? existingPerms[mod] : { view: false, edit: false, delete: false };
+        return `
+          <tr data-mod="${mod}">
+            <td>${mod}</td>
+            <td><input type="checkbox" class="p-view" ${p.view ? 'checked' : ''}></td>
+            <td><input type="checkbox" class="p-edit" ${p.edit ? 'checked' : ''}></td>
+            <td><input type="checkbox" class="p-delete" ${p.delete ? 'checked' : ''}></td>
+          </tr>`;
+      }).join('');
+    }
+
+    function openUserForm() {
+      document.getElementById('userForm').reset();
+      document.getElementById('edit-user-idx').value = "-1";
+      document.getElementById('user-form-title').innerText = "Add New User";
+      renderPermissionTable();
+      showSection('addUser');
+    }
+
+    function handleUserSubmit(e) {
+      e.preventDefault();
+      const idx = parseInt(document.getElementById('edit-user-idx').value);
+      
+      const permissions = {};
+      document.querySelectorAll('#permissionsTableBody tr').forEach(row => {
+        const mod = row.getAttribute('data-mod');
+        permissions[mod] = {
+          view: row.querySelector('.p-view').checked,
+          edit: row.querySelector('.p-edit').checked,
+          delete: row.querySelector('.p-delete').checked
+        };
+      });
+
+      const userData = {
+        name: document.getElementById('u_name').value,
+        loginId: document.getElementById('u_loginid').value,
+        password: document.getElementById('u_password').value,
+        mobile: document.getElementById('u_mobile').value,
+        permissions: permissions
+      };
+
+      if (idx === -1) state.users.push(userData);
+      else state.users[idx] = userData;
+
+      localStorage.setItem('biz_users', JSON.stringify(state.users));
+      showToast("User Access Profile Saved");
+      renderAll();
+      showSection('manageUser');
+    }
+
+    function editUser(idx) {
+      const u = state.users[idx];
+      document.getElementById('edit-user-idx').value = idx;
+      document.getElementById('u_name').value = u.name;
+      document.getElementById('u_loginid').value = u.loginId;
+      document.getElementById('u_password').value = u.password;
+      document.getElementById('u_mobile').value = u.mobile;
+      document.getElementById('user-form-title').innerText = "Edit User: " + u.name;
+      renderPermissionTable(u.permissions);
+      showSection('addUser');
+    }
+
+    function deleteUser(idx) {
+      if(confirm("Confirm user removal?")) {
+        state.users.splice(idx, 1);
+        localStorage.setItem('biz_users', JSON.stringify(state.users));
+        renderAll();
+      }
+    }
+
+    // --- MACHINE PRODUCTION LOGIC ---
+    function openMachineProductionForm() {
+      document.getElementById('machineProductionForm').reset();
+      document.getElementById('edit-machine-idx').value = "-1";
+      document.getElementById('machineItemsContainer').innerHTML = "";
+      document.getElementById('machineDate').value = new Date().toISOString().split('T')[0];
+      addMachineItem();
+      showSection('machineProduction');
+    }
+
+    function addMachineItem() {
+      const container = document.getElementById("machineItemsContainer");
+      const div = document.createElement("div");
+      div.className = "line-item-box machine-item";
+
+      const rollOptions = state.rolls
+        .filter(r => r.isProduction)
+        .map(r => `<option value="${r.rollName}">${r.rollName}</option>`).join("");
+
+      div.innerHTML = `
+        <button type="button" class="remove-btn" onclick="this.closest('.machine-item').remove()">X</button>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Roll Product</label>
+            <select class="machine-product" required>
+              <option value="">--Select Roll--</option>
+              ${rollOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Qty Produced</label>
+            <input type="number" class="machine-qty" required step="0.01" />
+          </div>
+        </div>`;
+      container.appendChild(div);
+    }
+
+    function saveMachineProduction(e) {
+      e.preventDefault();
+      const machineNo = document.getElementById("machineNo").value;
+      const date = document.getElementById("machineDate").value;
+      const editIdx = parseInt(document.getElementById('edit-machine-idx').value);
+
+      const items = [];
+      document.querySelectorAll(".machine-item").forEach(row => {
+        const name = row.querySelector(".machine-product").value;
+        const qty = parseFloat(row.querySelector(".machine-qty").value) || 0;
+        if (name && qty > 0) items.push({ rollName: name, qtyProduced: qty });
+      });
+
+      if (!items.length) return alert("Add at least one item.");
+
+      const entry = { date, machineNo, producedItems: items };
+
+      if (editIdx > -1) {
+        state.machineProductionData[editIdx] = entry;
+      } else {
+        state.machineProductionData.push(entry);
+      }
+
+      showToast("Production Saved");
+      renderMachineReport();
+      showSection("machineReport");
+    }
+
+    function renderMachineReport() {
+      const body = document.getElementById("machineReportBody");
+      if (!body) return;
+      body.innerHTML = "";
+
+      state.machineProductionData.forEach((entry, index) => {
+        const invoice = "M" + String(index + 1).padStart(6, "0");
+        const itemsHTML = entry.producedItems.map(i => `${i.rollName} (${i.qtyProduced})`).join("<br>");
+        const totalQty = entry.producedItems.reduce((sum, i) => sum + i.qtyProduced, 0);
+
+        body.innerHTML += `
+          <tr>
+            <td>${invoice}</td>
+            <td>${entry.date}</td>
+            <td>${entry.machineNo}</td>
+            <td>${itemsHTML}</td>
+            <td>${totalQty}</td>
+            <td>
+              <button class="btn-action" onclick="editMachineEntry(${index})">✏️</button>
+              <button class="btn-action" onclick="downloadMachinePDF(${index})">📄</button>
+            </td>
+          </tr>`;
+      });
+    }
+
+    function editMachineEntry(index) {
+      const data = state.machineProductionData[index];
+      showSection("machineProduction");
+
+      document.getElementById("machineDate").value = data.date;
+      document.getElementById("machineNo").value = data.machineNo;
+      document.getElementById("edit-machine-idx").value = index;
+      document.getElementById("machine-form-title").innerText = "Edit Production (M" + String(index + 1).padStart(6, "0") + ")";
+
+      const container = document.getElementById("machineItemsContainer");
+      container.innerHTML = "";
+
+      data.producedItems.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "line-item-box machine-item";
+
+        const options = state.rolls
+          .filter(r => r.isProduction)
+          .map(r => `<option value="${r.rollName}" ${r.rollName === item.rollName ? "selected":""}>${r.rollName}</option>`).join("");
+
+        div.innerHTML = `
+          <button type="button" class="remove-btn" onclick="this.closest('.machine-item').remove()">X</button>
+          <div class="form-grid">
+            <div class="form-group"><label>Roll Product</label>
+              <select class="machine-product">${options}</select>
+            </div>
+            <div class="form-group"><label>Qty Produced</label>
+              <input type="number" class="machine-qty" value="${item.qtyProduced}">
+            </div>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function downloadMachinePDF(index) {
+      const data = state.machineProductionData[index];
+      const invoice = "M" + String(index + 1).padStart(6, "0");
+
+      let html = `
+        <html><head><style>table{width:100%;border-collapse:collapse;margin-top:20px;} th,td{border:1px solid #333;padding:8px;text-align:left;}</style></head>
+        <body>
+          <h2>Production Invoice</h2>
+          <p><b>Invoice No:</b> ${invoice}</p>
+          <p><b>Date:</b> ${data.date}</p>
+          <p><b>Machine No:</b> ${data.machineNo}</p>
+          <table>
+            <thead><tr><th>Item</th><th>Qty Produced</th></tr></thead>
+            <tbody>
+              ${data.producedItems.map(i => `<tr><td>${i.rollName}</td><td>${i.qtyProduced}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </body></html>`;
+
+      const win = window.open("");
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+
+    function checkAddMachine(sel) {
+      if (sel.value === "__add") {
+        const n = prompt("Enter Machine Name:");
+        if (n) {
+          const opt = new Option(n, n);
+          sel.add(opt, sel.options.length - 1);
+          sel.value = n;
+        } else {
+          sel.value = "";
+        }
+      }
+    }
+
+    // --- ROLL LOGIC ---
+    function addChildSKU() {
+      const container = document.getElementById('childSKUContainer');
+      const div = document.createElement('div');
+      div.className = 'line-item-box child-sku-row';
+      const options = state.products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      
+      div.innerHTML = `
+        <button type="button" class="remove-btn" onclick="this.parentElement.remove()">X</button>
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label>Child SKU (Raw Material)</label>
+            <select class="child-sku-name searchable">${options}</select>
+          </div>
+          <div class="form-group">
+            <label>Qty per Roll</label>
+            <input type="number" class="child-sku-qty" step="0.001" placeholder="0.000" required />
+          </div>
+        </div>`;
+      container.appendChild(div);
+      applySearchableDropdowns();
+    }
+
+    function addRoll(e) {
+      e.preventDefault();
+      const rName = document.getElementById("rollName").value.trim();
+      const rStock = parseFloat(document.getElementById("rollStock").value) || 0;
+      const isProd = document.getElementById("rollProduction").checked;
+      
+      const materials = [];
+      document.querySelectorAll(".child-sku-row").forEach(row => {
+        const name = row.querySelector(".child-sku-name").value;
+        const qty = parseFloat(row.querySelector(".child-sku-qty").value) || 0;
+        if (name && qty > 0) materials.push({ name, qty });
+      });
+
+      state.rolls.push({ rollName: rName, weight: rStock, isProduction: isProd, childSKUs: materials });
+
+      const existingIdx = state.products.findIndex(p => p.name === rName);
+      if (existingIdx === -1) {
+        state.products.push({ name: rName, cat: "Rolls", unit: "kg", purPrice: 0, salePrice: 0, opening: rStock, ratio: 1, extra: 0 });
+      } else {
+        state.products[existingIdx].opening += rStock;
+      }
+
+      showToast("Roll Registered");
+      e.target.reset();
+      document.getElementById("childSKUContainer").innerHTML = "";
+      renderAll();
+      showSection("rollReport");
+    }
+
+    // --- SHARED UI HELPERS ---
+    function openPartyForm() {
+      document.getElementById('partyForm').reset();
+      document.getElementById('edit-party-idx').value = "-1";
+      document.getElementById('party-form-title').innerText = "Add New Party";
+      showSection('addParty');
+    }
+
+    function openProductForm() {
+      document.getElementById('productForm').reset();
+      document.getElementById('edit-prod-idx').value = "-1";
+      document.getElementById('prod-form-title').innerText = "Product Master";
+      showSection('addProduct');
+    }
+
+    function openPurchaseForm() {
+      document.getElementById('edit-pur-idx').value = "-1";
+      document.getElementById('pur-form-title').innerText = "New Purchase";
+      document.getElementById('purchase-items-container').innerHTML = "";
+      document.getElementById('p_total').value = "0.00";
+      addPurchaseRow();
+      showSection('addPurchase');
+    }
+
+    function openSaleForm() {
+      document.getElementById('edit-sale-idx').value = "-1";
+      document.getElementById('sale-form-title').innerText = "New Sale";
+      document.getElementById('sale-items-container').innerHTML = "";
+      document.getElementById('s_total').value = "0.00";
+      addSaleRow();
+      showSection('addSale');
+    }
+
+    // ✅ UPDATED: Roll form opening logic
+    function openRollForm() {
+      showSection('addRoll');
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(id);
+      if (target) target.classList.add('active');
+      renderAll();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg; t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function addPurchaseRow() {
+      const container = document.getElementById('purchase-items-container');
+      const div = document.createElement('div');
+      div.className = 'line-item-box';
+      const options = state.products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      div.innerHTML = `
+        <button class="remove-btn" onclick="this.parentElement.remove(); calcTotal('purchase')">X</button>
+        <div class="form-grid">
+          <div class="form-group"><label>Product</label><select class="p-prod searchable" onchange="autoFill('p', this)"><option value="">--Select--</option>${options}</select></div>
+          <div class="form-group"><label>Qty</label><input type="number" class="p-pcs" value="0" step="0.01" oninput="calcTotal('purchase')"></div>
+          <div class="form-group"><label>Rate</label><input type="number" class="p-rate" value="0" step="0.01" oninput="calcTotal('purchase')"></div>
+          <div class="form-group"><label>Extra</label><input type="number" class="p-extra" value="0" step="0.01" oninput="calcTotal('purchase')"></div>
+        </div>`;
+      container.appendChild(div);
+      applySearchableDropdowns();
+    }
+
+    function addSaleRow() {
+      const container = document.getElementById('sale-items-container');
+      const div = document.createElement('div');
+      div.className = 'line-item-box';
+      const options = state.products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+      div.innerHTML = `
+        <button class="remove-btn" onclick="this.parentElement.remove(); calcTotal('sale')">X</button>
+        <div class="form-grid">
+          <div class="form-group"><label>Product</label><select class="s-prod searchable" onchange="autoFill('s', this)"><option value="">--Select--</option>${options}</select></div>
+          <div class="form-group"><label>TH</label><input type="number" class="s-th" value="0" oninput="calcSaleRow(this)"></div>
+          <div class="form-group"><label>Bag/Grus</label><input type="number" class="s-bag" value="0" oninput="calcSaleRow(this)"></div>
+          <div class="form-group"><label>Ratio</label><input type="number" class="s-ratio" value="1" oninput="calcSaleRow(this)"></div>
+          <div class="form-group"><label>Net Qty (Pcs)</label><input type="number" class="s-pcs" value="0" step="0.01" oninput="calcTotal('sale')"></div>
+          <div class="form-group"><label>Rate</label><input type="number" class="s-rate" value="0" step="0.01" oninput="calcTotal('sale')"></div>
+        </div>`;
+      container.appendChild(div);
+      applySearchableDropdowns();
+    }
+
+    function calcSaleRow(input) {
+      const row = input.closest('.line-item-box');
+      const th = parseFloat(row.querySelector('.s-th').value) || 0;
+      const bag = parseFloat(row.querySelector('.s-bag').value) || 0;
+      const ratio = parseFloat(row.querySelector('.s-ratio').value) || 1;
+      row.querySelector('.s-pcs').value = (th * bag * ratio).toFixed(2);
+      calcTotal('sale');
+    }
+
+    function autoFill(type, sel) {
+      const row = sel.closest('.line-item-box');
+      const prod = state.products.find(p => p.name === sel.value);
+      if(!prod) return;
+      if(type === 'p') { row.querySelector('.p-rate').value = prod.purPrice; row.querySelector('.p-extra').value = prod.extra || 0; }
+      else { 
+        row.querySelector('.s-rate').value = prod.salePrice;
+        row.querySelector('.s-ratio').value = prod.ratio || 1;
+        calcSaleRow(row.querySelector('.s-prod'));
+      }
+      calcTotal(type === 'p' ? 'purchase' : 'sale');
+    }
+
+    function calcTotal(type) {
+      let grand = 0;
+      const selector = type === 'purchase' ? '#purchase-items-container .line-item-box' : '#sale-items-container .line-item-box';
+      document.querySelectorAll(selector).forEach(row => {
+        const q = parseFloat(row.querySelector(`.${type === 'purchase' ? 'p' : 's'}-pcs`).value) || 0;
+        const r = parseFloat(row.querySelector(`.${type === 'purchase' ? 'p' : 's'}-rate`).value) || 0;
+        const e = type === 'purchase' ? (parseFloat(row.querySelector('.p-extra').value) || 0) : 0;
+        grand += q * (r + e);
+      });
+      document.getElementById(`${type === 'purchase' ? 'p' : 's'}_total`).value = grand.toFixed(2);
+    }
+
+    function saveDoc(type) {
+      const isPur = type === 'purchase';
+      const party = document.getElementById(isPur ? 'p_party_select' : 's_party_select').value;
+      const date = document.getElementById(isPur ? 'p_date' : 's_date').value;
+      const idx = isPur ? parseInt(document.getElementById('edit-pur-idx').value) : parseInt(document.getElementById('edit-sale-idx').value);
+      if (!party) return alert("Select Party");
+      
+      const items = [];
+      document.querySelectorAll(`#${isPur?'purchase':'sale'}-items-container .line-item-box`).forEach(row => {
+        const prod = row.querySelector(`.${isPur?'p':'s'}-prod`).value;
+        const qty = parseFloat(row.querySelector(`.${isPur?'p':'s'}-pcs`).value) || 0;
+        const rate = parseFloat(row.querySelector(`.${isPur?'p':'s'}-rate`).value) || 0;
+        if(isPur) {
+           const extra = parseFloat(row.querySelector(`.p-extra`).value) || 0;
+           if(prod && qty > 0) items.push({ prod, qty, rate, extra });
+        } else {
+           const th = parseFloat(row.querySelector('.s-th').value) || 0;
+           const grus = parseFloat(row.querySelector('.s-bag').value) || 0;
+           const ratio = parseFloat(row.querySelector('.s-ratio').value) || 1;
+           if(prod && qty > 0) items.push({ prod, qty, rate, th, grus, ratio });
+        }
+      });
+
+      const entry = { party, date, total: parseFloat(document.getElementById(isPur ? 'p_total' : 's_total').value), items, timestamp: new Date().toLocaleString() };
+      if(idx > -1) state[isPur?'purchases':'sales'][idx] = entry;
+      else state[isPur?'purchases':'sales'].push(entry);
+      
+      showToast(type + " Saved");
+      renderAll();
+      showSection(isPur ? 'purchaseReport' : 'saleReport');
+    }
+
+    function handleProductSubmit(e) {
+      e.preventDefault();
+      const idx = parseInt(document.getElementById('edit-prod-idx').value);
+      const data = {
+        name: document.getElementById('m_prod_name').value.trim(),
+        cat: document.getElementById('m_prod_cat').value,
+        unit: document.getElementById('m_prod_unit').value,
+        purPrice: parseFloat(document.getElementById('m_prod_pur_price').value) || 0,
+        salePrice: parseFloat(document.getElementById('m_prod_sale_price').value) || 0,
+        opening: parseFloat(document.getElementById('m_prod_stock').value) || 0,
+        extra: parseFloat(document.getElementById('m_prod_extra').value) || 0,
+        ratio: parseFloat(document.getElementById('m_prod_grus_ratio').value) || 1
+      };
+      if(idx === -1) state.products.push(data); else state.products[idx] = data;
+      showToast("Product saved.");
+      renderAll();
+      showSection('productReport');
+    }
+
+    function handlePartySubmit(e) {
+      e.preventDefault();
+      state.parties.push({ name: document.getElementById('p_name').value, type: document.querySelector('input[name="p_type"]:checked').value });
+      showToast("Party Saved");
+      renderAll();
+      showSection('partyReport');
+    }
+
+    function applySearchableDropdowns() {
+      $('select.searchable').each(function() {
+        const $el = $(this);
+        if ($el.hasClass("select2-hidden-accessible")) $el.select2('destroy');
+        $el.select2({ placeholder: "--Select--", allowClear: true, width: 'resolve' });
+      });
+    }
+
+    function renderAll() {
+      // Products
+      document.getElementById('prodBody').innerHTML = state.products.map((p, i) => `
+        <tr><td>${p.name}</td><td>${p.cat}</td><td>${p.unit}</td><td>${p.purPrice}</td><td>${p.salePrice}</td><td>${p.opening}</td><td>${p.ratio}</td>
+        <td><button class="btn-action" onclick="editProduct(${i})">✏️</button><button class="btn-action" onclick="deleteProduct(${i})">🗑️</button></td></tr>`).join('');
+      
+      // Parties
+      document.getElementById('partyBody').innerHTML = state.parties.map((p, i) => `<tr><td>${p.name}</td><td>${p.type}</td><td><button class="btn-action" onclick="state.parties.splice(${i},1); renderAll();">🗑️</button></td></tr>`).join('');
+
+      // Users
+      document.getElementById('userTableBody').innerHTML = state.users.map((u, i) => `
+        <tr><td>${u.name}</td><td>${u.loginId}</td><td>${u.mobile}</td><td><small>Configured</small></td>
+        <td><button class="btn-action" onclick="editUser(${i})">✏️</button><button class="btn-action" onclick="deleteUser(${i})">🗑️</button></td></tr>`).join('');
+
+      // Purchases
+      document.getElementById('rptPurBody').innerHTML = state.purchases.map((p, index) => `
+        <tr><td>${p.date}</td><td><button class="btn-action" onclick="downloadPurchasePDF(${index})">📄</button></td><td>PP${100000 + index}</td><td>${p.party}</td><td>${p.items.map(i=>i.prod).join('<br>')}</td><td>1</td><td>${p.items.map(i=>i.qty).join('<br>')}</td><td>${p.items.map(i=>i.rate).join('<br>')}</td><td>${p.total}</td><td>${p.items.map(i=>i.extra).join('<br>')}</td><td>${p.items.map(i=>(i.qty*(i.rate+i.extra)).toFixed(2)).join('<br>')}</td><td><button class="btn-action" onclick="editPurchase(${index})">✏️</button></td><td>${p.timestamp}</td></tr>`).join('');
+
+      // Sales
+      document.getElementById('rptSaleBody').innerHTML = state.sales.map((s, index) => `
+        <tr><td>${s.date}</td><td><button class="btn-action" onclick="downloadSalePDF(${index})">📄</button></td><td>SP${100000 + index}</td><td>${s.party}</td><td>${s.items.map(i=>i.prod).join('<br>')}</td><td>${s.items.map(i=>i.qty).join('<br>')}</td><td>${s.items.map(i=>i.rate).join('<br>')}</td><td>${s.total}</td><td>${s.items.map(i=>(i.th*i.grus*i.ratio)).join('<br>')}</td><td>${s.items.map(i=>i.ratio).join('<br>')}</td><td>${s.items.map(i=>i.grus).join('<br>')}</td><td>${s.items.map(i=>(i.qty*i.rate).toFixed(2)).join('<br>')}</td><td><button class="btn-action" onclick="editSale(${index})">✏️</button></td><td>${s.timestamp}</td></tr>`).join('');
+
+      // Machine Production
+      renderMachineReport();
+
+      // Master Lists Options
+      const vendors = state.parties.filter(p => p.type === 'Vendor').map(p => `<option>${p.name}</option>`).join('');
+      const customers = state.parties.filter(p => p.type === 'Customer').map(p => `<option>${p.name}</option>`).join('');
+      if(document.getElementById('p_party_select')) document.getElementById('p_party_select').innerHTML = '<option value="">--Select--</option>' + vendors;
+      if(document.getElementById('s_party_select')) document.getElementById('s_party_select').innerHTML = '<option value="">--Select--</option>' + customers;
+      if(document.getElementById('m_prod_cat')) document.getElementById('m_prod_cat').innerHTML = state.categories.map(c => `<option>${c}</option>`).join('');
+      if(document.getElementById('m_prod_unit')) document.getElementById('m_prod_unit').innerHTML = state.units.map(u => `<option>${u}</option>`).join('');
+
+      // Dashboard Stats
+      document.getElementById('stat-parties').innerText = state.parties.length;
+      document.getElementById('stat-purchases').innerText = '₹' + state.purchases.reduce((a,b)=>a+b.total,0).toFixed(2);
+      document.getElementById('stat-sales').innerText = '₹' + state.sales.reduce((a,b)=>a+b.total,0).toFixed(2);
+      document.getElementById('stat-users').innerText = state.users.length;
+    }
+
+    function editProduct(i) {
+      const p = state.products[i];
+      document.getElementById('edit-prod-idx').value = i;
+      document.getElementById('m_prod_name').value = p.name;
+      document.getElementById('m_prod_pur_price').value = p.purPrice;
+      document.getElementById('m_prod_sale_price').value = p.salePrice;
+      document.getElementById('m_prod_stock').value = p.opening;
+      document.getElementById('prod-form-title').innerText = "Edit Product";
+      showSection('addProduct');
+    }
+
+    function deleteProduct(i) { if(confirm("Delete product?")) { state.products.splice(i,1); renderAll(); } }
+
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      ['p_date', 's_date', 'machineDate'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = today; });
+      addPurchaseRow(); addSaleRow();
+      renderAll();
+      setInterval(() => { document.getElementById('current-clock').innerText = new Date().toLocaleString(); }, 1000);
+    };
+  </script>
+</body>
+</html>
